@@ -17,27 +17,33 @@ namespace WebApplication2.Models
 
         public string Name => "manual";
 
-        public Deck Sort(Deck deck)
+        public void Sort(Deck deck)
         {
             for (var i = 0; i < countRepeat; i++)
             {
                 var random = new Random();
                 var firstRandomIndex = random.Next(deck.Cards.Count);
                 var secondRandomIndex = random.Next(firstRandomIndex);
-                deck = SwapDeckParts(deck, firstRandomIndex, secondRandomIndex);
+                SwapDeckParts(deck, firstRandomIndex, secondRandomIndex);
             }
-            return deck;
         }
 
-        private Deck SwapDeckParts(Deck deck, int firstIndex, int secondIndex)
+        private void SwapDeckParts(Deck deck, int firstIndex, int secondIndex)
         {
             var firstCardsBuffer = deck.Cards.Skip(firstIndex);
             var secondCardsBuffer = deck.Cards.Take(secondIndex);
-            deck.Cards = secondCardsBuffer
+            var result = secondCardsBuffer
                 .Concat(firstCardsBuffer)
                 .Concat(deck.Cards.Skip(secondIndex).Take(firstIndex - secondIndex))
+                .Select(card => card.Order)
                 .ToList();
-            return deck;
+
+            var index = 0;
+            foreach(var card in deck.Cards) 
+            { 
+                card.Order = result[index++];
+            }
+            deck.Cards = deck.Cards.OrderBy(card => card.Order).ToList();
         }
     }
 }

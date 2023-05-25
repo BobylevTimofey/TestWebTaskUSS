@@ -17,35 +17,32 @@ namespace WebApplication2.Services
 
         public async Task<List<Deck>> GetDecks()
         {
-            var decks = await _context.Decks.ToListAsync();
+            var decks = await _context.Decks
+                .Include(deck => deck.Cards)
+                .ToListAsync();
             foreach (var deck in decks)
-            {
-                deck.Cards = await _context.Cards.Where(card => card.DeckId == deck.Id).ToListAsync();
-            }
+                deck.Cards = deck.Cards
+                    .OrderBy(deck => deck.Order)
+                    .ToList();
             return decks;
         }
 
-        public async Task<IEnumerable<string>> GetNames()
+        public async Task<IEnumerable<string?>> GetNames()
         {
-            return await _context.Decks.Select(deck => deck.Name).ToListAsync();
+            return await _context.Decks
+                .Select(deck => deck.Name)
+                .ToListAsync();
         }
 
-        public async Task<Deck> GetDeckById(int id)
+        public Deck GetDeckById(int id)
         {
             var deck = GetDeckOutContext(id).Result;
-            deck.Cards = await _context.Cards.Where(card => card.DeckId == id).ToListAsync();
             return deck;
         }
 
         public async void DeleteDeck(int id)
         {
             var deck = GetDeckOutContext(id).Result;
-            var cards = _context.Cards.Where(card => card.DeckId == id);
-
-            foreach (var card in cards)
-            {
-                _context.Cards.Remove(card);
-            }
 
             _context.Decks.Remove(deck);
             await _context.SaveChangesAsync();
@@ -53,65 +50,27 @@ namespace WebApplication2.Services
 
         public async void RenameDeck(int id, string name)
         {
-            var deck =  GetDeckOutContext(id).Result;
+            var deck = GetDeckOutContext(id).Result;
             deck.Name = name;
-            _context.Entry(deck).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DeckExists(id))
-                {
-                    throw new Exception($"Deck with id - {id} not found");
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Deck> SortDeck(int id, string nameSort)
         {
             var deck = GetDeckOutContext(id).Result;
-
-            deck.Cards = await _context.Cards.Where(card => card.DeckId == id).ToListAsync();
-
             _sortService.Sort(nameSort, deck);
-
-            var newDeck = new Deck()
-            {
-                Id = deck.Id,
-                Name = deck.Name,
-                Cards = deck.Cards
-            };
-
-            foreach (var card in deck.Cards)
-            {
-                _context.Cards.Remove(card);
-            }
-
-            _context.Decks.Remove(deck);
             await _context.SaveChangesAsync();
-
-            _context.Decks.Add(newDeck);
-            foreach (var card in newDeck.Cards)
-            {
-                _context.Cards.Add(card);
-            }
-            await _context.SaveChangesAsync();
-
-            return newDeck;
+            deck.Cards = deck.Cards
+                .OrderBy(deck => deck.Order)
+                .ToList();
+            return deck;
         }
 
         public async Task<Deck> CreateDeck(DeckDto deckDto)
         {
             var deck = new Deck()
             {
-                Id = deckDto.Id,
+                DeckId = deckDto.Id,
                 Name = deckDto.Name,
                 Cards = CreateCards(deckDto.Id)
             };
@@ -124,29 +83,33 @@ namespace WebApplication2.Services
         private List<Card> CreateCards(int deckId)
         {
             var cards = new List<Card>();
+            var order = 0;
             foreach (var suit in Enum.GetNames(typeof(Suit)))
                 foreach (var name in Enum.GetNames(typeof(CardName)))
                 {
                     var card = new Card
                     {
                         DeckId = deckId,
+                        Order = order++,
                         Suit = suit,
                         CardName = name
                     };
                     cards.Add(card);
-                    _context.Cards.Add(card);
                 }
-            return cards;
-        }
 
-        private bool DeckExists(int id)
-        {
-            return (_context.Decks?.Any(e => e.Id == id)).GetValueOrDefault();
+            return cards;
         }
 
         private async Task<Deck> GetDeckOutContext(int id)
         {
-            var deck = await _context.Decks.FindAsync(id);
+            var deck = await _context.Decks
+                .Include(deck => deck.Cards)
+                .Where(deck => deck.DeckId == id)
+                .FirstOrDefaultAsync();
+            deck.Cards = deck.Cards
+                .OrderBy(deck => deck.Order)
+                .ToList();
+
             if (deck == null)
             {
                 throw new Exception($"Deck with id - {id} not found");

@@ -10,7 +10,7 @@ namespace WebApplication2.Models
         }
 
         public DbSet<Deck> Decks { get; set; } = null!;
-        public DbSet<Card> Cards { get; set; } = null!;
+        //public DbSet<Card> Cards { get; set; } = null!;
 
     }
 }

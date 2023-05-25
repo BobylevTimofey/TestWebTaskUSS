@@ -55,7 +55,7 @@ namespace WebApplication2.Controllers
                 return NotFound();
             }
             
-            return Ok(_deckService.GetDeckById(id).Result);
+            return Ok(_deckService.GetDeckById(id));
         }
 
 
@@ -75,7 +75,7 @@ namespace WebApplication2.Controllers
             }
 
             var deck = _deckService.CreateDeck(deckDto).Result;
-            return CreatedAtAction(nameof(GetDeck), new { id = deck.Id }, deck);
+            return CreatedAtAction(nameof(GetDeck), new { id = deck.DeckId }, deck);
         }
 
         [HttpPost("sort/{id}")]
@@ -87,7 +87,7 @@ namespace WebApplication2.Controllers
             }
 
             var deck = _deckService.SortDeck(id, nameSort).Result;
-            return CreatedAtAction(nameof(GetDeck), new { id = deck.Id }, deck);
+            return CreatedAtAction(nameof(GetDeck), new { id = deck.DeckId }, deck);
         }
 
         [HttpDelete("{id}")]

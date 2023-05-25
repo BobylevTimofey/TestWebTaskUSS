@@ -6,18 +6,17 @@ namespace WebApplication2.Models
     {
         public string Name => "Fisher Yates";
 
-        public Deck Sort(Deck deck)
+        public void Sort(Deck deck)
         {
             var random = new Random();
 
             for (var i = deck.Cards.Count - 1; i > 0; i--)
             {
                 var randomIndex = random.Next(i + 1);
-                var buffer = deck.Cards[i];
-                deck.Cards[i] = deck.Cards[randomIndex];
-                deck.Cards[randomIndex] = buffer;
+                var buffer = deck.Cards[i].Order;
+                deck.Cards[i].Order = deck.Cards[randomIndex].Order;
+                deck.Cards[randomIndex].Order = buffer;
             }
-            return deck;
         }
     }
 }
